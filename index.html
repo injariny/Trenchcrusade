@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dés D6">
+<meta name="theme-color" content="#534AB7">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Simulateur D6</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f5f4f0;
+    color: #1a1a18;
+    padding: 16px;
+    padding-top: max(16px, env(safe-area-inset-top));
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+    max-width: 600px;
+    margin: 0 auto;
+    min-height: 100vh;
+  }
+  h1 {
+    font-size: 18px;
+    font-weight: 500;
+    margin-bottom: 16px;
+    color: #1a1a18;
+  }
+  .panel {
+    background: #fff;
+    border: 0.5px solid rgba(0,0,0,0.12);
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-size: 11px;
+    font-weight: 500;
+    color: #888780;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 14px;
+  }
+  .param-block { margin-bottom: 18px; }
+  .param-block:last-child { margin-bottom: 0; }
+  .param-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+  }
+  .lbl { font-size: 14px; color: #5f5e5a; }
+  .val {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1a18;
+    min-width: 36px;
+    text-align: right;
+  }
+  input[type=range] {
+    width: 100%;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: #d3d1c7;
+    border-radius: 2px;
+    outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #534AB7;
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #534AB7;
+    cursor: pointer;
+    border: 2px solid #fff;
+  }
+  select {
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 0.5px solid rgba(0,0,0,0.2);
+    background: #fff;
+    color: #1a1a18;
+    font-size: 14px;
+    width: 100%;
+  }
+  .threshold-section {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 0.5px solid rgba(0,0,0,0.1);
+  }
+  .metric-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .metric { background: #f1efe8; border-radius: 8px; padding: 12px 14px; }
+  .metric.crit { background: #faeeda; }
+  .metric-label { font-size: 11px; color: #888780; margin-bottom: 4px; }
+  .metric.crit .metric-label { color: #854F0B; }
+  .metric-value { font-size: 24px; font-weight: 500; color: #1a1a18; line-height: 1.1; }
+  .metric.crit .metric-value { color: #854F0B; }
+  .metric-sub { font-size: 11px; color: #b4b2a9; margin-top: 3px; }
+  .metric.crit .metric-sub { color: #BA7517; opacity: 0.8; }
+  .dist-bar-wrap { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .dist-bar-label { min-width: 24px; text-align: right; color: #888780; font-size: 12px; }
+  .dist-bar-bg { flex: 1; background: #f1efe8; border-radius: 4px; height: 20px; overflow: hidden; }
+  .dist-bar { height: 100%; border-radius: 4px; background: #534AB7; transition: width 0.25s ease; }
+  .dist-bar.highlight { background: #1D9E75; }
+  .dist-pct { min-width: 42px; font-size: 12px; color: #888780; text-align: right; }
+
+  /* Banner d'installation */
+  #install-banner {
+    display: none;
+    background: #534AB7;
+    color: white;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    align-items: center;
+    gap: 12px;
+  }
+  #install-banner.visible { display: flex; }
+  #install-banner p { flex: 1; font-size: 14px; line-height: 1.4; }
+  #install-banner strong { display: block; font-size: 15px; margin-bottom: 2px; }
+  #btn-install {
+    background: white;
+    color: #534AB7;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  #btn-dismiss {
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.7);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    body { background: #1c1c1a; color: #e8e6df; }
+    .panel { background: #2a2a28; border-color: rgba(255,255,255,0.1); }
+    .section-title { color: #888780; }
+    .lbl { color: #b4b2a9; }
+    .val { color: #e8e6df; }
+    select { background: #2a2a28; color: #e8e6df; border-color: rgba(255,255,255,0.15); }
+    .metric { background: #333330; }
+    .metric.crit { background: #3a2e1a; }
+    .metric-label { color: #888780; }
+    .metric.crit .metric-label { color: #EF9F27; }
+    .metric-value { color: #e8e6df; }
+    .metric.crit .metric-value { color: #EF9F27; }
+    .metric-sub { color: #5f5e5a; }
+    .dist-bar-label { color: #888780; }
+    .dist-bar-bg { background: #333330; }
+    .dist-pct { color: #888780; }
+    input[type=range] { background: #444441; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Bannière d'installation PWA -->
+<div id="install-banner">
+  <p><strong>📲 Installer l'app</strong>Ajouter à l'écran d'accueil pour un accès rapide, même hors ligne.</p>
+  <button id="btn-install">Installer</button>
+  <button id="btn-dismiss">×</button>
+</div>
+
+<h1>🎲 Simulateur D6</h1>
+
+<div class="panel">
+  <div class="section-title">Paramètres</div>
+
+  <div class="param-block">
+    <div class="param-header">
+      <span class="lbl">Nombre de D6 lancés</span>
+      <span class="val" id="numDiceVal">3</span>
+    </div>
+    <input type="range" min="2" max="10" value="3" id="numDice" step="1">
+  </div>
+
+  <div class="param-block">
+    <div class="param-header">
+      <span class="lbl">Modificateur</span>
+      <span class="val" id="modifierVal">+0</span>
+    </div>
+    <input type="range" min="-3" max="3" value="0" id="modifier" step="1">
+  </div>
+
+  <div class="param-block">
+    <div class="param-header">
+      <span class="lbl">Dés conservés</span>
+    </div>
+    <select id="keepMode">
+      <option value="highest2" selected>2 plus hauts</option>
+      <option value="highest3">3 plus hauts</option>
+      <option value="lowest2">2 plus bas</option>
+      <option value="lowest3">3 plus bas</option>
+    </select>
+  </div>
+
+  <div class="threshold-section">
+    <div class="param-block">
+      <div class="param-header">
+        <span class="lbl">Score cible (≥)</span>
+        <span class="val" id="thresholdVal">7</span>
+      </div>
+      <input type="range" min="1" max="30" value="7" id="threshold" step="1">
+    </div>
+  </div>
+</div>
+
+<div class="metric-grid" id="metrics"></div>
+
+<div class="panel">
+  <div class="section-title">Distribution des résultats</div>
+  <div id="distribution"></div>
+</div>
+
+<script>
+// ── Service Worker ──────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+// ── PWA Install prompt ──────────────────────────────────────
+let deferredPrompt = null;
+const banner = document.getElementById('install-banner');
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  banner.classList.add('visible');
+});
+
+document.getElementById('btn-install').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  banner.classList.remove('visible');
+});
+
+document.getElementById('btn-dismiss').addEventListener('click', () => {
+  banner.classList.remove('visible');
+});
+
+window.addEventListener('appinstalled', () => {
+  banner.classList.remove('visible');
+  deferredPrompt = null;
+});
+
+// ── Calcul probabilités ─────────────────────────────────────
+function getKeepCount(mode) {
+  return parseInt(mode.replace('highest','').replace('lowest',''));
+}
+
+function computeDistribution(numDice, modifier, keepMode) {
+  const kc = getKeepCount(keepMode);
+  const isLowest = keepMode.startsWith('lowest');
+
+  function enumerate(n, current, acc) {
+    if(n === 0){ acc.push(current); return; }
+    for(let f = 1; f <= 6; f++) enumerate(n-1, [...current, f], acc);
+  }
+
+  const all = [];
+  enumerate(numDice, [], all);
+  const total = all.length;
+  const scores = {};
+  let critCount = 0;
+
+  for(const roll of all){
+    const sorted = [...roll].sort((a,b) => a - b);
+    const kept = isLowest ? sorted.slice(0, kc) : sorted.slice(-kc);
+    const s = kept.reduce((a,b) => a + b, 0) + modifier;
+    scores[s] = (scores[s] || 0) + 1;
+    if(kept.filter(f => f === 6).length >= 2) critCount++;
+  }
+
+  return { scores, total, critCount };
+}
+
+function update() {
+  const nd  = parseInt(document.getElementById('numDice').value);
+  const mod = parseInt(document.getElementById('modifier').value);
+  const km  = document.getElementById('keepMode').value;
+  const thr = parseInt(document.getElementById('threshold').value);
+
+  document.getElementById('numDiceVal').textContent = nd;
+  document.getElementById('modifierVal').textContent = (mod >= 0 ? '+' : '') + mod;
+  document.getElementById('thresholdVal').textContent = thr;
+
+  const { scores, total, critCount } = computeDistribution(nd, mod, km);
+  const keys = Object.keys(scores).map(Number).sort((a,b) => a - b);
+  const maxCount = Math.max(...Object.values(scores));
+
+  let above = 0;
+  for(const k of keys) if(k >= thr) above += scores[k];
+
+  const pAbove    = (above / total * 100).toFixed(1);
+  const pCrit     = (critCount / total * 100).toFixed(1);
+  const modeScore = keys.reduce((a,b) => scores[b] > scores[a] ? b : a, keys[0]);
+  const bestScore  = keys[keys.length - 1];
+  const worstScore = keys[0];
+
+  document.getElementById('metrics').innerHTML = `
+    <div class="metric">
+      <div class="metric-label">Probabilité ≥ ${thr}</div>
+      <div class="metric-value">${pAbove}%</div>
+      <div class="metric-sub">${above.toLocaleString()} / ${total.toLocaleString()} cas</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Résultat le plus probable</div>
+      <div class="metric-value">${modeScore}</div>
+      <div class="metric-sub">${(scores[modeScore]/total*100).toFixed(1)}% de chances</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Étendue</div>
+      <div class="metric-value">${worstScore} – ${bestScore}</div>
+      <div class="metric-sub">${getKeepCount(km)}d6 conservés</div>
+    </div>
+    <div class="metric crit">
+      <div class="metric-label">🔥 Coup critique</div>
+      <div class="metric-value">${pCrit}%</div>
+      <div class="metric-sub">≥ 2 faces 6 conservées</div>
+    </div>
+  `;
+
+  let html = '';
+  for(const k of keys){
+    const pct  = (scores[k] / total * 100).toFixed(1);
+    const barW = (scores[k] / maxCount * 100).toFixed(1);
+    const hl   = k >= thr ? 'highlight' : '';
+    html += `<div class="dist-bar-wrap">
+      <span class="dist-bar-label">${k}</span>
+      <div class="dist-bar-bg"><div class="dist-bar ${hl}" style="width:${barW}%"></div></div>
+      <span class="dist-pct">${pct}%</span>
+    </div>`;
+  }
+  document.getElementById('distribution').innerHTML = html;
+}
+
+['numDice','modifier','keepMode','threshold'].forEach(id => {
+  document.getElementById(id).addEventListener('input', update);
+  document.getElementById(id).addEventListener('change', update);
+});
+
+update();
+</script>
+</body>
+</html>
