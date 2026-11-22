@@ -162,6 +162,7 @@
 
   @media (prefers-color-scheme: dark) {
     body { background: #1c1c1a; color: #e8e6df; }
+    h1 { color: #e8e6df; }
     .panel { background: #2a2a28; border-color: rgba(255,255,255,0.1); }
     .section-title { color: #888780; }
     .lbl { color: #b4b2a9; }
@@ -200,7 +201,7 @@
       <span class="lbl">Nombre de D6 lancés</span>
       <span class="val" id="numDiceVal">3</span>
     </div>
-    <input type="range" min="2" max="10" value="3" id="numDice" step="1">
+    <input type="range" min="2" max="8" value="3" id="numDice" step="1">
   </div>
 
   <div class="param-block">
@@ -308,7 +309,11 @@ function computeDistribution(numDice, modifier, keepMode) {
 function update() {
   const nd  = parseInt(document.getElementById('numDice').value);
   const mod = parseInt(document.getElementById('modifier').value);
-  const km  = document.getElementById('keepMode').value;
+  const keepSel = document.getElementById('keepMode');
+  const lock3 = nd < 3;
+  for (const o of keepSel.options) if (o.value.endsWith('3')) o.disabled = lock3;
+  if (lock3 && keepSel.value.endsWith('3')) keepSel.value = keepSel.value.replace('3', '2');
+  const km  = keepSel.value;
   const thr = parseInt(document.getElementById('threshold').value);
 
   document.getElementById('numDiceVal').textContent = nd;

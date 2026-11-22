@@ -1,8 +1,12 @@
-const CACHE = 'simulateur-d6-v2';
-const FILES = ['/', '/index.html', '/manifest.json'];
+const CACHE = 'simulateur-d6-v4';
+const FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));
+  e.waitUntil(
+    caches.open(CACHE).then(c =>
+      Promise.all(FILES.map(f => c.add(f).catch(() => {})))
+    )
+  );
   self.skipWaiting();
 });
 
@@ -13,16 +17,18 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-// Stratégie network-first : on tente toujours le réseau d'abord
-// pour avoir la dernière version, et on retombe sur le cache
-// uniquement si la requête réseau échoue (mode hors ligne).
+// Network-first : on revalide toujours auprès du serveur (cache HTTP de GitHub Pages contourné),
+// et on ne mémorise que les réponses valides (jamais un 404 ou une erreur serveur).
+// Hors connexion, on retombe sur la dernière bonne version en cache.
 self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: 'no-cache' })
       .then(response => {
-        // On met à jour le cache avec la version fraîche
-        const responseClone = response.clone();
-        caches.open(CACHE).then(cache => cache.put(e.request, responseClone));
+        if (response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE).then(cache => cache.put(e.request, copy));
+        }
         return response;
       })
       .catch(() => caches.match(e.request))
