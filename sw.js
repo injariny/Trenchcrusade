@@ -1,4 +1,4 @@
-const CACHE = 'simulateur-d6-v1';
+const CACHE = 'simulateur-d6-v2';
 const FILES = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', e => {
@@ -13,8 +13,18 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
+// Stratégie network-first : on tente toujours le réseau d'abord
+// pour avoir la dernière version, et on retombe sur le cache
+// uniquement si la requête réseau échoue (mode hors ligne).
 self.addEventListener('fetch', e => {
   e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request))
+    fetch(e.request)
+      .then(response => {
+        // On met à jour le cache avec la version fraîche
+        const responseClone = response.clone();
+        caches.open(CACHE).then(cache => cache.put(e.request, responseClone));
+        return response;
+      })
+      .catch(() => caches.match(e.request))
   );
 });
